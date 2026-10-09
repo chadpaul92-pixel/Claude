@@ -17,7 +17,7 @@ A single-file HTML dashboard (`index.html`). It doesn't need a build step or a s
 | **Focus (Pomodoro) timer** with chime and notification, plus a daily session count | Your browser |
 | **Quick notes** | Saved in your browser |
 
-Click **⚙ Settings** to set your name, location, °F/°C, 12/24-hour clock, habits, water goal and Google connection.
+Click **⚙ Settings** to set your name, location, °F/°C, 12/24-hour clock, theme, habits, water goal and Google connection. The **🌓 Auto** button in the header cycles the theme between Auto (match your device), Light and Dark.
 
 ## Running it
 

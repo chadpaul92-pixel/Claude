@@ -4,6 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Personal Dashboard</title>
+<script>
+  try {
+    const t = (JSON.parse(localStorage.getItem('dash.settings')) || {}).theme;
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  } catch {}
+</script>
 <style>
   :root {
     --bg: #f4f5f7;
@@ -18,8 +24,11 @@
     --bad: #d64545;
     --shadow: 0 1px 2px rgba(20, 30, 50, .06), 0 4px 16px rgba(20, 30, 50, .05);
   }
+  /* Theme: "auto" follows the OS; data-theme="light"/"dark" forces one. */
+  :root { color-scheme: light; }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
       --bg: #0f1218;
       --card: #181c24;
       --text: #e7eaf0;
@@ -32,6 +41,20 @@
       --bad: #ff6b6b;
       --shadow: none;
     }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --bg: #0f1218;
+    --card: #181c24;
+    --text: #e7eaf0;
+    --muted: #8b93a5;
+    --border: #272c37;
+    --accent: #6d93ff;
+    --accent-soft: #1e2840;
+    --good: #3ccf7f;
+    --warn: #f2b33d;
+    --bad: #ff6b6b;
+    --shadow: none;
   }
   * { box-sizing: border-box; }
   body {
@@ -215,6 +238,7 @@
       <span id="google-status" class="muted small"></span>
       <button id="btn-connect" class="primary" hidden>Connect Google</button>
       <button id="btn-refresh" class="ghost" title="Refresh all">↻ Refresh</button>
+      <button id="btn-theme" class="ghost" title="Theme"></button>
       <button id="btn-settings" title="Settings">⚙ Settings</button>
     </div>
   </header>
@@ -326,6 +350,10 @@
       </div>
     </div>
     <div class="field">
+      <label for="s-theme">Theme</label>
+      <select id="s-theme"><option value="auto">Auto (match device)</option><option value="light">Light</option><option value="dark">Dark</option></select>
+    </div>
+    <div class="field">
       <label for="s-client">Google OAuth Client ID</label>
       <input type="text" id="s-client" placeholder="xxxxxxxx.apps.googleusercontent.com">
       <div class="hint">Needed for Calendar and Tasks. See README.md for the 5-minute setup.</div>
@@ -403,6 +431,7 @@ const DEFAULTS = {
   location: '',
   units: 'F',
   hour12: true,
+  theme: 'auto',
   clientId: '',
   shopSource: 'local',
   taskList: 'Shopping',
@@ -429,6 +458,22 @@ function relativeDuration(ms) {
   if (h < 24) return `in ${h}h${m ? ` ${m}m` : ''}`;
   const d = Math.round(h / 24);
   return `in ${d} day${d > 1 ? 's' : ''}`;
+}
+
+/* ---------- Theme ---------- */
+const THEMES = { auto: ['🌓', 'Auto'], light: ['☀️', 'Light'], dark: ['🌙', 'Dark'] };
+function applyTheme() {
+  const t = THEMES[settings.theme] ? settings.theme : 'auto';
+  if (t === 'auto') delete document.documentElement.dataset.theme;
+  else document.documentElement.dataset.theme = t;
+  $('btn-theme').textContent = `${THEMES[t][0]} ${THEMES[t][1]}`;
+  $('btn-theme').title = 'Theme: click to switch between Auto, Light and Dark';
+}
+function cycleTheme() {
+  const order = Object.keys(THEMES);
+  settings.theme = order[(order.indexOf(settings.theme) + 1) % order.length];
+  store.set('settings', settings);
+  applyTheme();
 }
 
 /* ---------- Clock, date, greeting ---------- */
@@ -998,6 +1043,7 @@ function openSettings() {
   $('s-location').value = settings.location;
   $('s-units').value = settings.units;
   $('s-hour12').value = settings.hour12 ? '1' : '0';
+  $('s-theme').value = settings.theme;
   $('s-client').value = settings.clientId;
   $('s-shopsrc').value = settings.shopSource;
   $('s-tasklist').value = settings.taskList;
@@ -1016,6 +1062,7 @@ function saveSettings() {
     location: $('s-location').value.trim(),
     units: $('s-units').value,
     hour12: $('s-hour12').value === '1',
+    theme: $('s-theme').value,
     clientId: $('s-client').value.trim(),
     shopSource: $('s-shopsrc').value,
     taskList: $('s-tasklist').value.trim() || 'Shopping',
@@ -1035,6 +1082,7 @@ function saveSettings() {
 
 /* ---------- Wire up ---------- */
 function renderAll() {
+  applyTheme();
   tickClock();
   renderProgress();
   renderCalendar();
@@ -1046,6 +1094,7 @@ function renderAll() {
 }
 
 $('btn-settings').onclick = openSettings;
+$('btn-theme').onclick = cycleTheme;
 $('btn-connect').onclick = connectGoogle;
 $('btn-refresh').onclick = () => { loadWeather(); refreshGoogle(); };
 $('btn-units').onclick = () => { settings.units = settings.units === 'F' ? 'C' : 'F'; store.set('settings', settings); loadWeather(); };
