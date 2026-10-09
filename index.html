@@ -1,0 +1,1165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Personal Dashboard</title>
+<style>
+  :root {
+    --bg: #f4f5f7;
+    --card: #ffffff;
+    --text: #1d2330;
+    --muted: #6b7385;
+    --border: #e3e6ec;
+    --accent: #3b6ef5;
+    --accent-soft: #e6edff;
+    --good: #1f9d55;
+    --warn: #d98b00;
+    --bad: #d64545;
+    --shadow: 0 1px 2px rgba(20, 30, 50, .06), 0 4px 16px rgba(20, 30, 50, .05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1218;
+      --card: #181c24;
+      --text: #e7eaf0;
+      --muted: #8b93a5;
+      --border: #272c37;
+      --accent: #6d93ff;
+      --accent-soft: #1e2840;
+      --good: #3ccf7f;
+      --warn: #f2b33d;
+      --bad: #ff6b6b;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button {
+    cursor: pointer;
+    background: var(--accent-soft);
+    color: var(--accent);
+    border: 0;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-weight: 600;
+  }
+  button:hover { filter: brightness(.96); }
+  button.ghost { background: transparent; color: var(--muted); padding: 4px 8px; }
+  button.primary { background: var(--accent); color: #fff; }
+  input[type=text], input[type=number], select, textarea {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 7px 10px;
+    width: 100%;
+  }
+  textarea { resize: vertical; }
+
+  .wrap { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px 24px;
+    margin-bottom: 20px;
+  }
+  #greeting { color: var(--muted); font-size: 1.05rem; }
+  #clock { font-size: clamp(2.6rem, 8vw, 4.2rem); font-weight: 700; letter-spacing: -.02em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+  #clock small { font-size: .4em; color: var(--muted); font-weight: 600; margin-left: 6px; }
+  #date { font-size: 1.15rem; font-weight: 500; }
+  .header-actions { display: flex; gap: 8px; align-items: center; }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px 18px;
+    box-shadow: var(--shadow);
+    min-width: 0;
+  }
+  .card.wide { grid-column: span 2; }
+  @media (max-width: 680px) { .card.wide { grid-column: span 1; } }
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+  }
+  .card h2 .actions { display: flex; gap: 2px; text-transform: none; letter-spacing: 0; flex-wrap: wrap; justify-content: flex-end; }
+  .card h2 .actions button { font-size: .78rem; padding: 3px 6px; }
+  .muted { color: var(--muted); }
+  .small { font-size: .85rem; }
+  .empty { color: var(--muted); font-style: italic; padding: 6px 0; }
+  .err { color: var(--bad); font-size: .9rem; }
+
+  /* Weather */
+  .wx-now { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .wx-icon { font-size: 3.4rem; line-height: 1; }
+  .wx-temp { font-size: 3rem; font-weight: 700; line-height: 1; }
+  .wx-meta { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 6px 16px; margin-top: 14px; }
+  .wx-meta div span { display: block; font-size: .75rem; color: var(--muted); }
+  .hourly, .daily { display: flex; gap: 8px; overflow-x: auto; padding: 12px 0 2px; }
+  .hourly > div, .daily > div {
+    flex: 0 0 auto;
+    text-align: center;
+    min-width: 56px;
+    padding: 6px 4px;
+    border-radius: 10px;
+    background: var(--bg);
+    font-size: .85rem;
+  }
+  .daily > div { min-width: 78px; }
+  .hourly .pop, .daily .pop { color: var(--accent); font-size: .75rem; }
+
+  /* Agenda */
+  .day-label { font-weight: 700; font-size: .8rem; color: var(--muted); margin: 12px 0 4px; }
+  .day-label:first-child { margin-top: 0; }
+  .event { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); }
+  .event:last-child { border-bottom: 0; }
+  .event .bar { width: 4px; border-radius: 2px; flex: 0 0 auto; }
+  .event .time { width: 72px; flex: 0 0 auto; color: var(--muted); font-size: .85rem; font-variant-numeric: tabular-nums; }
+  .event .title { font-weight: 500; overflow-wrap: anywhere; }
+  .event.past { opacity: .5; }
+  .event.now .time { color: var(--accent); font-weight: 700; }
+  .event a { color: inherit; text-decoration: none; }
+  .event a:hover { text-decoration: underline; }
+  .agenda-scroll { max-height: 420px; overflow-y: auto; }
+
+  /* Lists */
+  ul.checklist { list-style: none; margin: 0; padding: 0; }
+  ul.checklist li { display: flex; align-items: center; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+  ul.checklist li:last-child { border-bottom: 0; }
+  ul.checklist li label { flex: 1; overflow-wrap: anywhere; cursor: pointer; }
+  ul.checklist li.done label { text-decoration: line-through; color: var(--muted); }
+  ul.checklist li .del { visibility: hidden; }
+  ul.checklist li:hover .del { visibility: visible; }
+  input[type=checkbox] { width: 18px; height: 18px; accent-color: var(--accent); flex: 0 0 auto; }
+  .add-row { display: flex; gap: 8px; margin-top: 10px; }
+  .add-row input { flex: 1; }
+
+  /* Progress */
+  .prog { margin: 8px 0; }
+  .prog .lbl { display: flex; justify-content: space-between; font-size: .85rem; }
+  .prog .track { height: 8px; background: var(--bg); border-radius: 4px; overflow: hidden; margin-top: 4px; }
+  .prog .fill { height: 100%; background: var(--accent); border-radius: 4px; }
+
+  /* Tips */
+  .tips { list-style: none; padding: 0; margin: 0; }
+  .tips li { display: flex; gap: 10px; padding: 6px 0; }
+  .tips li .ic { width: 22px; text-align: center; flex: 0 0 auto; }
+  .next-up { background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+  .next-up .when { color: var(--accent); font-weight: 700; font-size: .85rem; }
+
+  /* Focus timer */
+  .timer { font-size: 3rem; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; margin: 4px 0 10px; }
+  .timer-modes, .timer-ctrl { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .timer-modes button.active { background: var(--accent); color: #fff; }
+  .timer-ctrl { margin-top: 10px; }
+
+  /* Water */
+  .water { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 10px; }
+  .water span { font-size: 1.5rem; cursor: pointer; filter: grayscale(1) opacity(.35); }
+  .water span.full { filter: none; }
+
+  .habit-streak { font-size: .8rem; color: var(--warn); font-weight: 600; white-space: nowrap; }
+
+  .connect-box { background: var(--bg); border-radius: 10px; padding: 12px; font-size: .9rem; }
+  .connect-box p { margin: 0 0 8px; }
+
+  dialog {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--card);
+    color: var(--text);
+    width: min(560px, calc(100vw - 32px));
+    padding: 20px;
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, .45); }
+  dialog h3 { margin: 0 0 12px; }
+  .field { margin-bottom: 12px; }
+  .field > label { display: block; font-size: .8rem; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+  .field .hint { font-size: .78rem; color: var(--muted); margin-top: 3px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div id="greeting">Hello</div>
+      <div id="clock">--:--</div>
+      <div id="date"></div>
+    </div>
+    <div class="header-actions">
+      <span id="google-status" class="muted small"></span>
+      <button id="btn-connect" class="primary" hidden>Connect Google</button>
+      <button id="btn-refresh" class="ghost" title="Refresh all">↻ Refresh</button>
+      <button id="btn-settings" title="Settings">⚙ Settings</button>
+    </div>
+  </header>
+
+  <main class="grid">
+    <!-- Weather -->
+    <section class="card wide" id="card-weather">
+      <h2><span id="wx-place">Weather</span><span class="actions"><button class="ghost" id="btn-units" title="Toggle units">°F / °C</button></span></h2>
+      <div id="wx-body"><div class="empty">Locating you…</div></div>
+    </section>
+
+    <!-- Next up & smart tips -->
+    <section class="card" id="card-tips">
+      <h2>Today at a glance</h2>
+      <div id="next-up"></div>
+      <ul class="tips" id="tips"></ul>
+    </section>
+
+    <!-- Calendar -->
+    <section class="card" id="card-calendar">
+      <h2>Calendar <span class="actions"><span class="muted small" id="cal-range">next 7 days</span></span></h2>
+      <div id="cal-body" class="agenda-scroll"></div>
+    </section>
+
+    <!-- Shopping -->
+    <section class="card" id="card-shopping">
+      <h2><span id="shop-title">Shopping list</span>
+        <span class="actions">
+          <button class="ghost" id="btn-shop-import" title="Paste a list copied from Google Keep">Import</button>
+          <button class="ghost" id="btn-shop-copy" title="Copy unchecked items">Copy</button>
+          <button class="ghost" id="btn-shop-clear" title="Remove checked items">Clear done</button>
+        </span>
+      </h2>
+      <div id="shop-body"></div>
+      <form class="add-row" id="shop-add">
+        <input type="text" id="shop-input" placeholder="Add an item…" autocomplete="off">
+        <button type="submit">Add</button>
+      </form>
+    </section>
+
+    <!-- Priorities -->
+    <section class="card" id="card-priorities">
+      <h2>Top 3 priorities today</h2>
+      <ul class="checklist" id="priorities"></ul>
+    </section>
+
+    <!-- Habits -->
+    <section class="card" id="card-habits">
+      <h2>Daily habits <span class="actions"><span class="muted small" id="habit-score"></span></span></h2>
+      <ul class="checklist" id="habits"></ul>
+      <div class="field" style="margin:14px 0 0">
+        <label>Water <span id="water-count" class="muted"></span></label>
+        <div class="water" id="water"></div>
+      </div>
+    </section>
+
+    <!-- Time progress -->
+    <section class="card" id="card-progress">
+      <h2>Time progress</h2>
+      <div id="progress"></div>
+    </section>
+
+    <!-- Focus timer -->
+    <section class="card" id="card-focus">
+      <h2>Focus timer <span class="actions"><span class="muted small" id="focus-count"></span></span></h2>
+      <div class="timer-modes" id="timer-modes">
+        <button data-min="25" class="active">Focus 25</button>
+        <button data-min="5">Break 5</button>
+        <button data-min="15">Long 15</button>
+      </div>
+      <div class="timer" id="timer">25:00</div>
+      <div class="timer-ctrl">
+        <button class="primary" id="timer-start">Start</button>
+        <button id="timer-reset">Reset</button>
+      </div>
+    </section>
+
+    <!-- Notes -->
+    <section class="card" id="card-notes">
+      <h2>Quick notes <span class="actions"><span class="muted small" id="notes-saved"></span></span></h2>
+      <textarea id="notes" rows="8" placeholder="Jot something down — saved automatically in this browser."></textarea>
+    </section>
+  </main>
+</div>
+
+<!-- Settings dialog -->
+<dialog id="settings-dlg">
+  <form method="dialog" id="settings-form">
+    <h3>Settings</h3>
+    <div class="row2">
+      <div class="field">
+        <label for="s-name">Your name</label>
+        <input type="text" id="s-name" placeholder="For the greeting">
+      </div>
+      <div class="field">
+        <label for="s-location">Location</label>
+        <input type="text" id="s-location" placeholder="Blank = use GPS">
+        <div class="hint">City name, e.g. "Austin"</div>
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="s-units">Temperature</label>
+        <select id="s-units"><option value="F">Fahrenheit</option><option value="C">Celsius</option></select>
+      </div>
+      <div class="field">
+        <label for="s-hour12">Clock</label>
+        <select id="s-hour12"><option value="1">12-hour</option><option value="0">24-hour</option></select>
+      </div>
+    </div>
+    <div class="field">
+      <label for="s-client">Google OAuth Client ID</label>
+      <input type="text" id="s-client" placeholder="xxxxxxxx.apps.googleusercontent.com">
+      <div class="hint">Needed for Calendar and Tasks. See README.md for the 5-minute setup.</div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="s-shopsrc">Shopping list source</label>
+        <select id="s-shopsrc">
+          <option value="local">This browser (paste from Keep)</option>
+          <option value="tasks">Google Tasks list (synced)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="s-tasklist">Google Tasks list name</label>
+        <input type="text" id="s-tasklist" placeholder="Shopping">
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label for="s-habits">Habits (one per line)</label>
+        <textarea id="s-habits" rows="4"></textarea>
+      </div>
+      <div class="field">
+        <label for="s-water">Daily water goal (glasses)</label>
+        <input type="number" id="s-water" min="1" max="20">
+      </div>
+    </div>
+    <div class="dialog-actions">
+      <button type="button" class="ghost" id="s-signout">Sign out of Google</button>
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button value="save" class="primary" id="s-save">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- Import dialog -->
+<dialog id="import-dlg">
+  <form method="dialog">
+    <h3>Import shopping list</h3>
+    <p class="muted small">In Google Keep, open your list, select all of the text (Ctrl/Cmd+A), copy it, and paste it here. Each line becomes one item.</p>
+    <textarea id="import-text" rows="10"></textarea>
+    <div class="field" style="margin-top:8px">
+      <label><input type="checkbox" id="import-replace"> Replace the current list</label>
+    </div>
+    <div class="dialog-actions">
+      <button value="cancel">Cancel</button>
+      <button value="import" class="primary">Import</button>
+    </div>
+  </form>
+</dialog>
+
+<script>
+'use strict';
+
+/* ---------- Storage (fails soft in private mode) ---------- */
+const store = {
+  get(key, fallback) {
+    try {
+      const v = localStorage.getItem('dash.' + key);
+      return v == null ? fallback : JSON.parse(v);
+    } catch { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem('dash.' + key, JSON.stringify(value)); } catch {}
+  },
+};
+const session = {
+  get(key) { try { return JSON.parse(sessionStorage.getItem('dash.' + key)); } catch { return null; } },
+  set(key, value) { try { sessionStorage.setItem('dash.' + key, JSON.stringify(value)); } catch {} },
+  del(key) { try { sessionStorage.removeItem('dash.' + key); } catch {} },
+};
+
+const DEFAULTS = {
+  name: '',
+  location: '',
+  units: 'F',
+  hour12: true,
+  clientId: '',
+  shopSource: 'local',
+  taskList: 'Shopping',
+  habits: ['Exercise', 'Read 20 minutes', 'Meditate', 'No phone after 10pm'],
+  waterGoal: 8,
+};
+let settings = { ...DEFAULTS, ...store.get('settings', {}) };
+
+/* ---------- Helpers ---------- */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = (n) => String(n).padStart(2, '0');
+const dayKey = (d = new Date()) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate());
+const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+const fmtTime = (d) => d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', hour12: settings.hour12 });
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+function relativeDuration(ms) {
+  const mins = Math.round(ms / 60000);
+  if (mins < 1) return 'now';
+  if (mins < 60) return `in ${mins} min`;
+  const h = Math.floor(mins / 60), m = mins % 60;
+  if (h < 24) return `in ${h}h${m ? ` ${m}m` : ''}`;
+  const d = Math.round(h / 24);
+  return `in ${d} day${d > 1 ? 's' : ''}`;
+}
+
+/* ---------- Clock, date, greeting ---------- */
+function tickClock() {
+  const now = new Date();
+  const parts = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: settings.hour12 }).split(' ');
+  $('clock').innerHTML = esc(parts[0]) + (parts[1] ? `<small>${esc(parts[1])}</small>` : '');
+  $('date').textContent = now.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  const h = now.getHours();
+  const part = h < 5 ? 'Good night' : h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : h < 22 ? 'Good evening' : 'Good night';
+  $('greeting').textContent = settings.name ? `${part}, ${settings.name}` : part;
+  document.title = `${fmtTime(now)} · Dashboard`;
+}
+
+/* ---------- Time progress ---------- */
+function renderProgress() {
+  const now = new Date();
+  const dayStart = startOfDay(now);
+  const weekStart = addDays(dayStart, -((now.getDay() + 6) % 7)); // Monday
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const yearStart = new Date(now.getFullYear(), 0, 1);
+  const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
+  const rows = [
+    ['Day', dayStart, addDays(dayStart, 1)],
+    ['Week', weekStart, addDays(weekStart, 7)],
+    [now.toLocaleDateString([], { month: 'long' }), monthStart, monthEnd],
+    [String(now.getFullYear()), yearStart, yearEnd],
+  ];
+  const dayOfYear = Math.floor((dayStart - yearStart) / 864e5) + 1;
+  const weekNo = isoWeek(now);
+  $('progress').innerHTML = rows.map(([label, a, b]) => {
+    const pct = Math.min(100, Math.max(0, ((now - a) / (b - a)) * 100));
+    return `<div class="prog"><div class="lbl"><span>${esc(label)}</span><span class="muted">${pct.toFixed(1)}%</span></div>
+      <div class="track"><div class="fill" style="width:${pct}%"></div></div></div>`;
+  }).join('') + `<div class="muted small" style="margin-top:10px">Day ${dayOfYear} of the year · ISO week ${weekNo}</div>`;
+}
+function isoWeek(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  t.setUTCDate(t.getUTCDate() + 4 - (t.getUTCDay() || 7));
+  const y0 = new Date(Date.UTC(t.getUTCFullYear(), 0, 1));
+  return Math.ceil(((t - y0) / 864e5 + 1) / 7);
+}
+
+/* ---------- Weather (Open-Meteo, no API key) ---------- */
+const WMO = {
+  0: ['Clear', '☀️', '🌙'], 1: ['Mostly clear', '🌤️', '🌙'], 2: ['Partly cloudy', '⛅', '☁️'], 3: ['Overcast', '☁️', '☁️'],
+  45: ['Fog', '🌫️'], 48: ['Freezing fog', '🌫️'],
+  51: ['Light drizzle', '🌦️'], 53: ['Drizzle', '🌦️'], 55: ['Heavy drizzle', '🌧️'],
+  56: ['Freezing drizzle', '🌧️'], 57: ['Freezing drizzle', '🌧️'],
+  61: ['Light rain', '🌦️'], 63: ['Rain', '🌧️'], 65: ['Heavy rain', '🌧️'],
+  66: ['Freezing rain', '🌧️'], 67: ['Freezing rain', '🌧️'],
+  71: ['Light snow', '🌨️'], 73: ['Snow', '🌨️'], 75: ['Heavy snow', '❄️'], 77: ['Snow grains', '🌨️'],
+  80: ['Showers', '🌦️'], 81: ['Showers', '🌧️'], 82: ['Violent showers', '⛈️'],
+  85: ['Snow showers', '🌨️'], 86: ['Snow showers', '❄️'],
+  95: ['Thunderstorm', '⛈️'], 96: ['Thunderstorm, hail', '⛈️'], 99: ['Thunderstorm, hail', '⛈️'],
+};
+const wmo = (code, isDay = 1) => {
+  const w = WMO[code] || ['—', '🌡️'];
+  return { label: w[0], icon: !isDay && w[2] ? w[2] : w[1] };
+};
+let weather = null; // last forecast payload, also used by tips
+
+function getCoords() {
+  return new Promise((resolve, reject) => {
+    if (settings.location) {
+      fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(settings.location)}&count=1`)
+        .then((r) => r.json())
+        .then((j) => {
+          const g = j.results && j.results[0];
+          if (!g) return reject(new Error(`Couldn't find "${settings.location}".`));
+          resolve({ lat: g.latitude, lon: g.longitude, place: [g.name, g.admin1].filter(Boolean).join(', ') });
+        })
+        .catch(reject);
+      return;
+    }
+    const cached = store.get('coords', null);
+    if (!navigator.geolocation) {
+      return cached ? resolve(cached) : reject(new Error('Geolocation unavailable — set a city in Settings.'));
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const c = { lat: +pos.coords.latitude.toFixed(3), lon: +pos.coords.longitude.toFixed(3), place: '' };
+        try {
+          const r = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${c.lat}&longitude=${c.lon}&localityLanguage=en`);
+          const j = await r.json();
+          c.place = [j.city || j.locality, j.principalSubdivisionCode?.split('-')[1] || j.principalSubdivision].filter(Boolean).join(', ');
+        } catch {}
+        store.set('coords', c);
+        resolve(c);
+      },
+      (err) => (cached ? resolve(cached) : reject(new Error('Location permission denied — set a city in Settings.'))),
+      { timeout: 10000, maximumAge: 30 * 60 * 1000 }
+    );
+  });
+}
+
+async function loadWeather() {
+  try {
+    const c = await getCoords();
+    const f = settings.units === 'F';
+    const q = new URLSearchParams({
+      latitude: c.lat, longitude: c.lon, timezone: 'auto', forecast_days: 6,
+      temperature_unit: f ? 'fahrenheit' : 'celsius',
+      wind_speed_unit: f ? 'mph' : 'kmh',
+      precipitation_unit: f ? 'inch' : 'mm',
+      current: 'temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,is_day,precipitation',
+      hourly: 'temperature_2m,precipitation_probability,weather_code,is_day',
+      daily: 'weather_code,temperature_2m_max,temperature_2m_min,sunrise,sunset,uv_index_max,precipitation_probability_max',
+    });
+    const [wx, aq] = await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?${q}`).then((r) => r.json()),
+      fetch(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${c.lat}&longitude=${c.lon}&current=us_aqi,pm2_5&timezone=auto`)
+        .then((r) => r.json()).catch(() => null),
+    ]);
+    if (wx.error) throw new Error(wx.reason || 'Weather service error');
+    weather = { ...wx, aqi: aq?.current?.us_aqi, place: c.place };
+    renderWeather();
+  } catch (e) {
+    $('wx-body').innerHTML = `<div class="err">${esc(e.message)}</div>`;
+  }
+  renderTips();
+}
+
+function aqiLabel(aqi) {
+  if (aqi == null) return ['—', 'muted'];
+  if (aqi <= 50) return ['Good', 'good'];
+  if (aqi <= 100) return ['Moderate', 'warn'];
+  if (aqi <= 150) return ['Unhealthy for sensitive', 'warn'];
+  return ['Unhealthy', 'bad'];
+}
+
+function renderWeather() {
+  const w = weather, cur = w.current, d = w.daily, u = w.current_units;
+  const now = wmo(cur.weather_code, cur.is_day);
+  const deg = '°';
+  const time = (iso) => fmtTime(new Date(iso));
+  const [aqiText, aqiCls] = aqiLabel(w.aqi);
+  $('wx-place').textContent = w.place ? `Weather · ${w.place}` : 'Weather';
+
+  // Next 12 hours starting from the current hour
+  const hourKey = cur.time.slice(0, 13) + ':00';
+  let start = w.hourly.time.indexOf(hourKey);
+  if (start < 0) start = 0;
+  const hours = w.hourly.time.slice(start, start + 12).map((t, i) => {
+    const k = start + i;
+    const ic = wmo(w.hourly.weather_code[k], w.hourly.is_day[k]).icon;
+    const label = i === 0 ? 'Now' : new Date(t).toLocaleTimeString([], { hour: 'numeric', hour12: settings.hour12 });
+    const pop = w.hourly.precipitation_probability[k];
+    return `<div><div class="muted">${esc(label)}</div><div style="font-size:1.3rem">${ic}</div>
+      <div>${Math.round(w.hourly.temperature_2m[k])}${deg}</div><div class="pop">${pop >= 10 ? pop + '%' : '&nbsp;'}</div></div>`;
+  }).join('');
+
+  const days = d.time.map((t, i) => {
+    const date = new Date(t + 'T12:00');
+    const label = i === 0 ? 'Today' : date.toLocaleDateString([], { weekday: 'short' });
+    const pop = d.precipitation_probability_max[i];
+    return `<div><div class="muted">${esc(label)}</div><div style="font-size:1.3rem">${wmo(d.weather_code[i]).icon}</div>
+      <div><b>${Math.round(d.temperature_2m_max[i])}${deg}</b> <span class="muted">${Math.round(d.temperature_2m_min[i])}${deg}</span></div>
+      <div class="pop">${pop >= 10 ? pop + '%' : '&nbsp;'}</div></div>`;
+  }).join('');
+
+  $('wx-body').innerHTML = `
+    <div class="wx-now">
+      <div class="wx-icon">${now.icon}</div>
+      <div>
+        <div class="wx-temp">${Math.round(cur.temperature_2m)}${deg}</div>
+        <div class="muted">${esc(now.label)} · H ${Math.round(d.temperature_2m_max[0])}${deg} L ${Math.round(d.temperature_2m_min[0])}${deg}</div>
+      </div>
+    </div>
+    <div class="wx-meta">
+      <div><span>Feels like</span>${Math.round(cur.apparent_temperature)}${deg}</div>
+      <div><span>Humidity</span>${cur.relative_humidity_2m}%</div>
+      <div><span>Wind</span>${Math.round(cur.wind_speed_10m)} ${esc(u.wind_speed_10m)}</div>
+      <div><span>Rain chance</span>${d.precipitation_probability_max[0] ?? 0}%</div>
+      <div><span>UV index</span>${(d.uv_index_max[0] ?? 0).toFixed(1)}</div>
+      <div><span>Air quality</span><span style="display:inline;color:var(--${aqiCls})">${w.aqi ?? '—'} ${esc(aqiText)}</span></div>
+      <div><span>Sunrise</span>${time(d.sunrise[0])}</div>
+      <div><span>Sunset</span>${time(d.sunset[0])}</div>
+    </div>
+    <div class="hourly">${hours}</div>
+    <div class="daily">${days}</div>`;
+}
+
+/* ---------- Google auth (Calendar + Tasks) ---------- */
+const SCOPES = 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/tasks';
+let tokenClient = null;
+let gToken = session.get('gtoken');
+const hasToken = () => gToken && gToken.expires_at > Date.now() + 30000;
+
+function loadGis() {
+  if (!settings.clientId) return updateGoogleStatus();
+  if (window.google?.accounts?.oauth2) return initTokenClient();
+  const s = document.createElement('script');
+  s.src = 'https://accounts.google.com/gsi/client';
+  s.async = true;
+  s.onload = initTokenClient;
+  s.onerror = () => updateGoogleStatus('Could not load Google sign-in.');
+  document.head.appendChild(s);
+}
+function initTokenClient() {
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: settings.clientId,
+    scope: SCOPES,
+    callback: (resp) => {
+      if (resp.error) return updateGoogleStatus('Google sign-in failed: ' + resp.error);
+      gToken = { access_token: resp.access_token, expires_at: Date.now() + resp.expires_in * 1000 };
+      session.set('gtoken', gToken);
+      store.set('gconsented', true);
+      refreshGoogle();
+    },
+  });
+  updateGoogleStatus();
+}
+function connectGoogle() {
+  if (!settings.clientId) return openSettings();
+  if (!tokenClient) return loadGis();
+  tokenClient.requestAccessToken({ prompt: store.get('gconsented', false) ? '' : 'consent' });
+}
+function signOut() {
+  if (gToken && window.google?.accounts?.oauth2) google.accounts.oauth2.revoke(gToken.access_token, () => {});
+  gToken = null;
+  session.del('gtoken');
+  store.set('gconsented', false);
+  calendarEvents = [];
+  renderCalendar();
+  renderShopping();
+  updateGoogleStatus();
+}
+function updateGoogleStatus(msg) {
+  const connected = hasToken();
+  $('btn-connect').hidden = connected;
+  $('btn-connect').textContent = store.get('gconsented', false) ? 'Reconnect Google' : 'Connect Google';
+  $('google-status').textContent = msg || (connected ? '● Google connected' : '');
+  if (!connected) { renderCalendar(); if (settings.shopSource === 'tasks') renderShopping(); }
+}
+async function gFetch(url, opts = {}) {
+  if (!hasToken()) throw new Error('not-connected');
+  const r = await fetch(url, {
+    ...opts,
+    headers: { Authorization: `Bearer ${gToken.access_token}`, 'Content-Type': 'application/json', ...(opts.headers || {}) },
+  });
+  if (r.status === 401) { gToken = null; session.del('gtoken'); updateGoogleStatus(); throw new Error('not-connected'); }
+  if (!r.ok) throw new Error(`Google API error ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  return r.status === 204 ? null : r.json();
+}
+function refreshGoogle() {
+  updateGoogleStatus();
+  if (!hasToken()) return;
+  loadCalendar();
+  if (settings.shopSource === 'tasks') loadTasks();
+}
+
+function connectPrompt(what) {
+  if (!settings.clientId) {
+    return `<div class="connect-box"><p>Add a Google OAuth Client ID in <b>Settings</b> to show your ${esc(what)}.</p>
+      <p class="muted small">Setup takes about 5 minutes — see README.md.</p><button onclick="openSettings()">Open settings</button></div>`;
+  }
+  return `<div class="connect-box"><p>Connect your Google account to show your ${esc(what)}.</p>
+    <button class="primary" onclick="connectGoogle()">Connect Google</button></div>`;
+}
+
+/* ---------- Calendar ---------- */
+let calendarEvents = [];
+
+async function loadCalendar() {
+  try {
+    const cals = await gFetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader');
+    const visible = cals.items.filter((c) => c.selected || c.primary);
+    const timeMin = startOfDay(new Date()).toISOString();
+    const timeMax = addDays(startOfDay(new Date()), 7).toISOString();
+    const lists = await Promise.all(visible.map((c) =>
+      gFetch(`https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(c.id)}/events?` +
+        new URLSearchParams({ timeMin, timeMax, singleEvents: 'true', orderBy: 'startTime', maxResults: '100' }))
+        .then((j) => j.items.map((e) => ({ ...e, _color: e.colorId ? null : c.backgroundColor, _cal: c.summary })))
+        .catch(() => [])
+    ));
+    calendarEvents = lists.flat()
+      .filter((e) => e.status !== 'cancelled')
+      .filter((e) => !(e.attendees || []).some((a) => a.self && a.responseStatus === 'declined'))
+      .map((e) => {
+        const allDay = !!e.start.date;
+        const start = allDay ? new Date(e.start.date + 'T00:00') : new Date(e.start.dateTime);
+        const end = allDay ? new Date(e.end.date + 'T00:00') : new Date(e.end.dateTime);
+        return { id: e.id, title: e.summary || '(No title)', start, end, allDay, color: e._color || 'var(--accent)',
+          link: e.htmlLink, location: e.location, meet: e.hangoutLink };
+      })
+      .sort((a, b) => (b.allDay - a.allDay) || (a.start - b.start));
+    renderCalendar();
+  } catch (e) {
+    if (e.message !== 'not-connected') $('cal-body').innerHTML = `<div class="err">${esc(e.message)}</div>`;
+  }
+  renderTips();
+}
+
+function renderCalendar() {
+  if (!hasToken()) { $('cal-body').innerHTML = connectPrompt('calendar events'); return; }
+  const now = new Date();
+  const today = startOfDay(now);
+  let html = '';
+  for (let i = 0; i < 7; i++) {
+    const d0 = addDays(today, i), d1 = addDays(today, i + 1);
+    const evs = calendarEvents.filter((e) => e.start < d1 && e.end > d0);
+    if (!evs.length && i > 0) continue;
+    const label = i === 0 ? 'Today' : i === 1 ? 'Tomorrow' : d0.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+    html += `<div class="day-label">${esc(label)}</div>`;
+    if (!evs.length) html += '<div class="empty">Nothing scheduled 🎉</div>';
+    for (const e of evs) {
+      const cls = e.end <= now ? 'past' : e.start <= now ? 'now' : '';
+      const time = e.allDay ? 'All day' : fmtTime(e.start);
+      const extra = e.meet ? ` · <a href="${esc(e.meet)}" target="_blank" rel="noopener">Join</a>` : e.location ? ` · ${esc(e.location)}` : '';
+      html += `<div class="event ${cls}"><div class="bar" style="background:${esc(e.color)}"></div>
+        <div class="time">${esc(time)}</div>
+        <div><div class="title"><a href="${esc(e.link)}" target="_blank" rel="noopener">${esc(e.title)}</a></div>
+        ${extra ? `<div class="muted small">${e.allDay ? '' : esc(fmtTime(e.end)) + ' end'}${extra}</div>` : ''}</div></div>`;
+    }
+  }
+  $('cal-body').innerHTML = html;
+}
+
+/* ---------- Shopping list (local or Google Tasks) ---------- */
+let localShop = store.get('shopping', []);
+let tasksListId = null;
+let tasksItems = [];
+let tasksError = '';
+
+async function loadTasks() {
+  tasksError = '';
+  try {
+    const lists = await gFetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists?maxResults=100');
+    const want = (settings.taskList || 'Shopping').trim().toLowerCase();
+    let list = lists.items?.find((l) => l.title.trim().toLowerCase() === want);
+    if (!list) {
+      list = await gFetch('https://tasks.googleapis.com/tasks/v1/users/@me/lists', {
+        method: 'POST', body: JSON.stringify({ title: settings.taskList || 'Shopping' }),
+      });
+    }
+    tasksListId = list.id;
+    const j = await gFetch(`https://tasks.googleapis.com/tasks/v1/lists/${tasksListId}/tasks?showCompleted=true&showHidden=false&maxResults=100`);
+    tasksItems = (j.items || []).filter((t) => t.title).sort((a, b) => a.position.localeCompare(b.position))
+      .map((t) => ({ id: t.id, text: t.title, done: t.status === 'completed' }));
+  } catch (e) {
+    if (e.message !== 'not-connected') tasksError = e.message;
+  }
+  renderShopping();
+}
+
+const useTasks = () => settings.shopSource === 'tasks';
+const shopItems = () => (useTasks() ? tasksItems : localShop);
+
+function renderShopping() {
+  $('shop-title').textContent = useTasks() ? `Shopping · ${settings.taskList || 'Shopping'} (Tasks)` : 'Shopping list';
+  $('btn-shop-import').hidden = useTasks();
+  if (useTasks() && !hasToken()) { $('shop-body').innerHTML = connectPrompt('Google Tasks shopping list'); return; }
+  if (tasksError && useTasks()) { $('shop-body').innerHTML = `<div class="err">${esc(tasksError)}</div>`; return; }
+  const items = [...shopItems()].sort((a, b) => a.done - b.done);
+  const left = items.filter((i) => !i.done).length;
+  $('shop-body').innerHTML = items.length
+    ? `<div class="muted small" style="margin-bottom:4px">${left} item${left === 1 ? '' : 's'} left</div><ul class="checklist">` +
+      items.map((i) => `<li class="${i.done ? 'done' : ''}" data-id="${esc(i.id)}">
+        <input type="checkbox" id="shop-${esc(i.id)}" ${i.done ? 'checked' : ''}>
+        <label for="shop-${esc(i.id)}">${esc(i.text)}</label>
+        <button class="ghost del" title="Delete">✕</button></li>`).join('') + '</ul>'
+    : '<div class="empty">Your list is empty.</div>';
+}
+
+async function shopAdd(text) {
+  if (useTasks()) {
+    if (!hasToken() || !tasksListId) return;
+    const t = await gFetch(`https://tasks.googleapis.com/tasks/v1/lists/${tasksListId}/tasks`, { method: 'POST', body: JSON.stringify({ title: text }) });
+    tasksItems.unshift({ id: t.id, text: t.title, done: false });
+  } else {
+    localShop.push({ id: uid(), text, done: false });
+    store.set('shopping', localShop);
+  }
+  renderShopping();
+}
+async function shopToggle(id, done) {
+  const item = shopItems().find((i) => i.id === id);
+  if (!item) return;
+  item.done = done;
+  renderShopping();
+  if (useTasks()) {
+    await gFetch(`https://tasks.googleapis.com/tasks/v1/lists/${tasksListId}/tasks/${id}`, {
+      method: 'PATCH', body: JSON.stringify(done ? { status: 'completed' } : { status: 'needsAction', completed: null }),
+    }).catch((e) => { item.done = !done; renderShopping(); alert(e.message); });
+  } else store.set('shopping', localShop);
+}
+async function shopDelete(id) {
+  if (useTasks()) {
+    await gFetch(`https://tasks.googleapis.com/tasks/v1/lists/${tasksListId}/tasks/${id}`, { method: 'DELETE' }).catch((e) => alert(e.message));
+    tasksItems = tasksItems.filter((i) => i.id !== id);
+  } else {
+    localShop = localShop.filter((i) => i.id !== id);
+    store.set('shopping', localShop);
+  }
+  renderShopping();
+}
+async function shopClearDone() {
+  if (useTasks()) {
+    if (!tasksListId) return;
+    await gFetch(`https://tasks.googleapis.com/tasks/v1/lists/${tasksListId}/clear`, { method: 'POST' }).catch((e) => alert(e.message));
+    tasksItems = tasksItems.filter((i) => !i.done);
+  } else {
+    localShop = localShop.filter((i) => !i.done);
+    store.set('shopping', localShop);
+  }
+  renderShopping();
+}
+
+function parseImported(text) {
+  return text.split(/\r?\n/)
+    .map((l) => l.replace(/^\s*(?:[-*•·◦▪]|\[[ xX]?\]|☐|☑|✓|✔|\d+[.)])\s*/, '').trim())
+    .filter(Boolean);
+}
+
+/* ---------- Today at a glance (next event + smart tips) ---------- */
+function renderTips() {
+  const now = new Date();
+  const tips = [];
+
+  // Next event
+  const upcoming = calendarEvents.filter((e) => !e.allDay && e.end > now);
+  const next = upcoming.find((e) => e.start > now) || null;
+  const current = upcoming.find((e) => e.start <= now);
+  let nextHtml = '';
+  if (current) {
+    nextHtml += `<div class="next-up"><div class="when">Happening now · ends ${esc(fmtTime(current.end))}</div><div>${esc(current.title)}</div></div>`;
+  }
+  if (next) {
+    nextHtml += `<div class="next-up"><div class="when">Next ${esc(relativeDuration(next.start - now))} · ${esc(fmtTime(next.start))}</div><div>${esc(next.title)}</div></div>`;
+  }
+  $('next-up').innerHTML = nextHtml;
+
+  // Calendar load today
+  if (hasToken()) {
+    const tomorrow = addDays(startOfDay(now), 1);
+    const todays = calendarEvents.filter((e) => !e.allDay && e.start < tomorrow && e.end > startOfDay(now));
+    const left = todays.filter((e) => e.end > now);
+    const busyMin = left.reduce((s, e) => s + (e.end - Math.max(e.start, now)) / 60000, 0);
+    if (!todays.length) tips.push(['🗓️', 'No meetings today — a great day for deep work.']);
+    else tips.push(['🗓️', `${left.length} of ${todays.length} event${todays.length === 1 ? '' : 's'} left today (${Math.round(busyMin / 6) / 10}h booked).`]);
+  }
+
+  // Weather-driven tips
+  if (weather) {
+    const d = weather.daily, cur = weather.current, f = settings.units === 'F';
+    const pop = d.precipitation_probability_max[0] ?? 0;
+    const uv = d.uv_index_max[0] ?? 0;
+    const feels = cur.apparent_temperature;
+    if (pop >= 50) tips.push(['☂️', `${pop}% chance of rain today — bring an umbrella.`]);
+    else if (pop >= 25) tips.push(['🌂', `${pop}% chance of rain — maybe pack a compact umbrella.`]);
+    if (uv >= 6) tips.push(['🧴', `UV peaks at ${uv.toFixed(0)} — wear sunscreen.`]);
+    if (feels <= (f ? 40 : 4)) tips.push(['🧥', 'It feels cold out — dress warmly.']);
+    else if (feels <= (f ? 58 : 14)) tips.push(['🧥', 'A light jacket would be a good idea.']);
+    else if (feels >= (f ? 90 : 32)) tips.push(['🥵', 'Very hot — stay hydrated and seek shade.']);
+    if (weather.aqi > 100) tips.push(['😷', `Air quality is poor (AQI ${weather.aqi}) — limit time outdoors.`]);
+    const sunset = new Date(d.sunset[0]);
+    if (sunset > now) tips.push(['🌇', `Sunset at ${fmtTime(sunset)} (${relativeDuration(sunset - now).replace('in ', '')} of daylight left).`]);
+    const tomorrowPop = d.precipitation_probability_max[1] ?? 0;
+    if (tomorrowPop >= 60) tips.push(['🔮', `Rain likely tomorrow (${tomorrowPop}%).`]);
+  }
+
+  // Personal tips
+  const water = store.get('water', {})[dayKey()] || 0;
+  const expected = Math.floor((settings.waterGoal * Math.max(0, now.getHours() - 7)) / 15);
+  if (now.getHours() >= 10 && water < expected) tips.push(['💧', `You're behind on water — ${water}/${settings.waterGoal} glasses.`]);
+  const shopLeft = shopItems().filter((i) => !i.done).length;
+  if (shopLeft) tips.push(['🛒', `${shopLeft} item${shopLeft === 1 ? '' : 's'} on your shopping list.`]);
+  const pr = store.get('priorities', {})[dayKey()];
+  if (!pr || !pr.some((p) => p.text)) tips.push(['🎯', 'Set your top 3 priorities for today.']);
+
+  $('tips').innerHTML = tips.length
+    ? tips.map(([ic, t]) => `<li><span class="ic">${ic}</span><span>${esc(t)}</span></li>`).join('')
+    : '<li class="empty">All clear.</li>';
+}
+
+/* ---------- Priorities ---------- */
+function renderPriorities() {
+  const all = store.get('priorities', {});
+  const today = all[dayKey()] || [{}, {}, {}].map(() => ({ text: '', done: false }));
+  $('priorities').innerHTML = today.map((p, i) => `<li class="${p.done ? 'done' : ''}">
+    <input type="checkbox" data-i="${i}" ${p.done ? 'checked' : ''}>
+    <input type="text" data-i="${i}" value="${esc(p.text)}" placeholder="Priority ${i + 1}" style="border:0;background:transparent;padding:4px 0;${p.done ? 'text-decoration:line-through;color:var(--muted)' : ''}">
+  </li>`).join('');
+}
+function savePriority(i, patch) {
+  const all = store.get('priorities', {});
+  const k = dayKey();
+  const today = all[k] || [0, 1, 2].map(() => ({ text: '', done: false }));
+  today[i] = { ...today[i], ...patch };
+  // keep only the last 30 days
+  const keep = Object.keys(all).sort().slice(-30);
+  const trimmed = Object.fromEntries(keep.map((d) => [d, all[d]]));
+  trimmed[k] = today;
+  store.set('priorities', trimmed);
+}
+
+/* ---------- Habits & water ---------- */
+function habitStreak(name, log) {
+  let streak = 0;
+  let d = new Date();
+  if (!(log[dayKey(d)] || []).includes(name)) d = addDays(d, -1); // today not done yet doesn't break the streak
+  while ((log[dayKey(d)] || []).includes(name)) { streak++; d = addDays(d, -1); }
+  return streak;
+}
+function renderHabits() {
+  const log = store.get('habits', {});
+  const done = log[dayKey()] || [];
+  $('habits').innerHTML = settings.habits.map((h, i) => {
+    const s = habitStreak(h, log);
+    const on = done.includes(h);
+    return `<li class="${on ? 'done' : ''}"><input type="checkbox" id="habit-${i}" data-h="${esc(h)}" ${on ? 'checked' : ''}>
+      <label for="habit-${i}">${esc(h)}</label>${s > 1 ? `<span class="habit-streak">🔥 ${s}</span>` : ''}</li>`;
+  }).join('') || '<li class="empty">Add habits in Settings.</li>';
+  const n = settings.habits.filter((h) => done.includes(h)).length;
+  $('habit-score').textContent = settings.habits.length ? `${n}/${settings.habits.length}` : '';
+
+  const water = store.get('water', {})[dayKey()] || 0;
+  $('water-count').textContent = `${water}/${settings.waterGoal}`;
+  $('water').innerHTML = Array.from({ length: settings.waterGoal }, (_, i) =>
+    `<span class="${i < water ? 'full' : ''}" data-n="${i + 1}" title="${i + 1} glass${i ? 'es' : ''}">💧</span>`).join('');
+}
+
+/* ---------- Focus timer ---------- */
+const timer = { total: 25 * 60, left: 25 * 60, running: false, handle: null, mode: 25 };
+function renderTimer() {
+  $('timer').textContent = `${pad(Math.floor(timer.left / 60))}:${pad(timer.left % 60)}`;
+  $('timer-start').textContent = timer.running ? 'Pause' : timer.left < timer.total ? 'Resume' : 'Start';
+  const count = store.get('focus', {})[dayKey()] || 0;
+  $('focus-count').textContent = count ? `${count} session${count === 1 ? '' : 's'} today` : '';
+}
+function timerTick() {
+  timer.left = Math.max(0, Math.round((timer.endsAt - Date.now()) / 1000));
+  if (timer.left === 0) {
+    clearInterval(timer.handle);
+    timer.running = false;
+    if (timer.mode === 25) {
+      const f = store.get('focus', {});
+      f[dayKey()] = (f[dayKey()] || 0) + 1;
+      store.set('focus', f);
+    }
+    chime();
+    try { if (Notification.permission === 'granted') new Notification(timer.mode === 25 ? 'Focus session done — take a break!' : 'Break over — back to it!'); } catch {}
+    timer.left = timer.total;
+  }
+  renderTimer();
+}
+function chime() {
+  try {
+    const ctx = new AudioContext();
+    [0, 0.25, 0.5].forEach((t, i) => {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.frequency.value = [660, 880, 990][i];
+      g.gain.setValueAtTime(0.2, ctx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.4);
+      o.connect(g).connect(ctx.destination);
+      o.start(ctx.currentTime + t);
+      o.stop(ctx.currentTime + t + 0.4);
+    });
+  } catch {}
+}
+
+/* ---------- Settings ---------- */
+function openSettings() {
+  $('s-name').value = settings.name;
+  $('s-location').value = settings.location;
+  $('s-units').value = settings.units;
+  $('s-hour12').value = settings.hour12 ? '1' : '0';
+  $('s-client').value = settings.clientId;
+  $('s-shopsrc').value = settings.shopSource;
+  $('s-tasklist').value = settings.taskList;
+  $('s-habits').value = settings.habits.join('\n');
+  $('s-water').value = settings.waterGoal;
+  $('s-signout').hidden = !hasToken();
+  $('settings-dlg').showModal();
+}
+window.openSettings = openSettings;
+window.connectGoogle = connectGoogle;
+
+function saveSettings() {
+  const prev = settings;
+  settings = {
+    name: $('s-name').value.trim(),
+    location: $('s-location').value.trim(),
+    units: $('s-units').value,
+    hour12: $('s-hour12').value === '1',
+    clientId: $('s-client').value.trim(),
+    shopSource: $('s-shopsrc').value,
+    taskList: $('s-tasklist').value.trim() || 'Shopping',
+    habits: $('s-habits').value.split('\n').map((s) => s.trim()).filter(Boolean),
+    waterGoal: Math.min(20, Math.max(1, parseInt($('s-water').value, 10) || 8)),
+  };
+  store.set('settings', settings);
+  if (prev.clientId !== settings.clientId) { tokenClient = null; loadGis(); }
+  if (prev.location !== settings.location || prev.units !== settings.units) loadWeather();
+  if (prev.shopSource !== settings.shopSource || prev.taskList !== settings.taskList) {
+    tasksListId = null; tasksItems = [];
+    if (useTasks() && hasToken()) loadTasks();
+  }
+  renderAll();
+  if (weather) renderWeather();
+}
+
+/* ---------- Wire up ---------- */
+function renderAll() {
+  tickClock();
+  renderProgress();
+  renderCalendar();
+  renderShopping();
+  renderPriorities();
+  renderHabits();
+  renderTimer();
+  renderTips();
+}
+
+$('btn-settings').onclick = openSettings;
+$('btn-connect').onclick = connectGoogle;
+$('btn-refresh').onclick = () => { loadWeather(); refreshGoogle(); };
+$('btn-units').onclick = () => { settings.units = settings.units === 'F' ? 'C' : 'F'; store.set('settings', settings); loadWeather(); };
+$('settings-dlg').addEventListener('close', () => { if ($('settings-dlg').returnValue === 'save') saveSettings(); });
+$('s-signout').onclick = () => { signOut(); $('settings-dlg').close(); };
+
+$('shop-add').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const text = $('shop-input').value.trim();
+  if (!text) return;
+  $('shop-input').value = '';
+  shopAdd(text).catch((err) => alert(err.message));
+});
+$('shop-body').addEventListener('change', (e) => {
+  const li = e.target.closest('li');
+  if (li && e.target.type === 'checkbox') shopToggle(li.dataset.id, e.target.checked).then(renderTips);
+});
+$('shop-body').addEventListener('click', (e) => {
+  if (e.target.classList.contains('del')) shopDelete(e.target.closest('li').dataset.id).then(renderTips);
+});
+$('btn-shop-clear').onclick = () => shopClearDone().then(renderTips);
+$('btn-shop-copy').onclick = async () => {
+  const text = shopItems().filter((i) => !i.done).map((i) => i.text).join('\n');
+  try { await navigator.clipboard.writeText(text); $('btn-shop-copy').textContent = 'Copied!'; }
+  catch { prompt('Copy your list:', text); }
+  setTimeout(() => ($('btn-shop-copy').textContent = 'Copy'), 1500);
+};
+$('btn-shop-import').onclick = () => { $('import-text').value = ''; $('import-dlg').showModal(); };
+$('import-dlg').addEventListener('close', () => {
+  if ($('import-dlg').returnValue !== 'import') return;
+  const items = parseImported($('import-text').value).map((text) => ({ id: uid(), text, done: false }));
+  localShop = $('import-replace').checked ? items : [...localShop, ...items];
+  store.set('shopping', localShop);
+  renderShopping();
+  renderTips();
+});
+
+$('priorities').addEventListener('change', (e) => {
+  const i = +e.target.dataset.i;
+  if (e.target.type === 'checkbox') { savePriority(i, { done: e.target.checked }); renderPriorities(); }
+  else savePriority(i, { text: e.target.value.trim() });
+  renderTips();
+});
+
+$('habits').addEventListener('change', (e) => {
+  const h = e.target.dataset.h;
+  if (!h) return;
+  const log = store.get('habits', {});
+  const k = dayKey();
+  const set = new Set(log[k] || []);
+  e.target.checked ? set.add(h) : set.delete(h);
+  log[k] = [...set];
+  // keep 400 days of history for streaks
+  const keep = Object.keys(log).sort().slice(-400);
+  store.set('habits', Object.fromEntries(keep.map((d) => [d, log[d]])));
+  renderHabits();
+});
+$('water').addEventListener('click', (e) => {
+  const n = +e.target.dataset.n;
+  if (!n) return;
+  const w = store.get('water', {});
+  const k = dayKey();
+  w[k] = w[k] === n ? n - 1 : n; // clicking the last full glass un-fills it
+  store.set('water', w);
+  renderHabits();
+  renderTips();
+});
+
+$('timer-modes').addEventListener('click', (e) => {
+  const min = +e.target.dataset.min;
+  if (!min) return;
+  clearInterval(timer.handle);
+  Object.assign(timer, { mode: min, total: min * 60, left: min * 60, running: false });
+  [...$('timer-modes').children].forEach((b) => b.classList.toggle('active', b === e.target));
+  renderTimer();
+});
+$('timer-start').onclick = () => {
+  if (timer.running) {
+    clearInterval(timer.handle);
+    timer.running = false;
+  } else {
+    try { if (window.Notification && Notification.permission === 'default') Notification.requestPermission(); } catch {}
+    timer.endsAt = Date.now() + timer.left * 1000;
+    timer.running = true;
+    timer.handle = setInterval(timerTick, 250);
+  }
+  renderTimer();
+};
+$('timer-reset').onclick = () => { clearInterval(timer.handle); timer.running = false; timer.left = timer.total; renderTimer(); };
+
+const notes = $('notes');
+notes.value = store.get('notes', '');
+let notesTimer;
+notes.addEventListener('input', () => {
+  clearTimeout(notesTimer);
+  $('notes-saved').textContent = '…';
+  notesTimer = setTimeout(() => { store.set('notes', notes.value); $('notes-saved').textContent = 'Saved'; }, 400);
+});
+
+/* ---------- Boot & refresh loops ---------- */
+let lastDay = dayKey();
+renderAll();
+loadWeather();
+loadGis();
+refreshGoogle();
+
+setInterval(() => {
+  tickClock();
+  if (dayKey() !== lastDay) { lastDay = dayKey(); renderAll(); loadWeather(); refreshGoogle(); }
+}, 1000);
+setInterval(() => { renderProgress(); renderTips(); if (hasToken()) renderCalendar(); }, 60 * 1000);
+setInterval(loadWeather, 15 * 60 * 1000);
+setInterval(refreshGoogle, 5 * 60 * 1000);
+document.addEventListener('visibilitychange', () => { if (!document.hidden) { renderAll(); refreshGoogle(); } });
+</script>
+</body>
+</html>
